@@ -1,0 +1,86 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+{{ block.super }}
+
+<!-- 現在のプラン情報表示 -->
+<div style="margin-top: 10px; margin-bottom: 15px; padding: 12px; background-color: #f5f5f5; border-left: 4px solid #121634; border-radius: 4px;">
+  <strong style="color: #333;">現在のプラン:</strong>
+  {% if current_plan %}
+    <a href="/pricing/" style="color: #121634; font-weight: bold; margin-left: 8px; text-decoration: none; cursor: pointer; border-bottom: 1px solid #121634;">{{ current_plan.display_name }}</a>
+  {% else %}
+    <a href="/pricing/" style="color: #999; margin-left: 8px; text-decoration: none; cursor: pointer; border-bottom: 1px solid #999;">未設定（無料プラン）</a>
+  {% endif %}
+</div>
+
+<div style="margin-top: 10px;">
+  <button id="toggleCsvForm" type="button" class="button" style="background-color:#4CAF50; color:white; border-color:#4CAF50;">
+    Import CSV
+  </button>
+  <button id="toggleJsonForm" type="button" class="button" style="background-color:#2196F3; color:white; border-color:#2196F3;">
+    Import JSON
+  </button>
+
+  <!-- CSV upload form -->
+  <form id="csvUploadForm" method="post" enctype="multipart/form-data"
+        action="import-csv/" style="display:none; margin-top:10px;">
+    {% csrf_token %}
+    <input type="file" name="csv_file" accept=".csv" required>
+    <button type="submit" class="button" style="background-color:#4CAF50; color:white; border-color:#4CAF50;">
+      Upload CSV
+    </button>
+  </form>
+
+  <!-- JSON upload form -->
+  <form id="jsonUploadForm" method="post" enctype="multipart/form-data" style="display:none; margin-top:10px;">
+    {% csrf_token %}
+    <input type="file" name="json_file" accept=".json" required>
+    <button type="submit" class="button" style="background-color:#2196F3; color:white; border-color:#2196F3;">
+      Upload JSON
+    </button>
+  </form>
+</div>
+
+<form action="./delete-all/" method="post" style="margin-top:10px;">
+    {% csrf_token %}
+    <button type="submit" class="button" style="background-color:#f44336; color:white; border-color:#f44336;">
+      Delete All Comments
+    </button>
+</form>
+
+{% if is_premium %}
+<div style="margin-top: 10px;">
+  <a href="./export-report/" class="button report-export-btn" style="background-color:#FFD447; color:#121634; border-color:#FFD447; text-decoration:none; display:inline-block; padding:10px 15px; font-weight: bold;">
+    レポート出力（有料プラン）
+  </a>
+</div>
+{% else %}
+<div style="margin-top: 10px;">
+  <button type="button" class="button" style="background-color:#9E9E9E; color:white; cursor:not-allowed;" disabled title="この機能は有料プランのみ利用可能です">
+    レポート出力（有料プラン）
+  </button>
+  <span style="margin-left: 10px; color: #666; font-size: 12px;">※ 有料プランにアップグレードすると利用できます</span>
+</div>
+{% endif %}
+  
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const csvBtn = document.getElementById("toggleCsvForm");
+  const jsonBtn = document.getElementById("toggleJsonForm");
+  const csvForm = document.getElementById("csvUploadForm");
+  const jsonForm = document.getElementById("jsonUploadForm");
+
+  csvBtn.addEventListener("click", function() {
+    csvForm.style.display = csvForm.style.display === "none" ? "block" : "none";
+    jsonForm.style.display = "none";
+  });
+
+  jsonBtn.addEventListener("click", function() {
+    jsonForm.style.display = jsonForm.style.display === "none" ? "block" : "none";
+    csvForm.style.display = "none";
+  });
+});
+</script>
+{% endblock %}

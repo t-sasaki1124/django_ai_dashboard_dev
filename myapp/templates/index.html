@@ -1,0 +1,818 @@
+{% extends "base.html" %}
+
+{% block title %}AI Comment Analysis Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="flex h-screen">
+  <!-- 左ペイン（サイドバー） - Notion風デザイン -->
+  <!-- 
+    Notion風デザインルール:
+    - アクティブ: bg-gray-100 + text-gray-900 + border-l-2 border-gray-400 (薄いグレー背景 + 濃い文字 + 左の細いアクセント線)
+    - ホバー: hover:bg-gray-100/80 (薄いグレーの面がふわっと)
+    - 非アクティブ: text-gray-600 (透明背景、薄いグレーテキスト)
+    - アニメーション: transition-colors duration-150 (控えめな色変化のみ)
+  -->
+  <aside class="w-64 bg-gray-50/50 border-r border-gray-200/60 flex-shrink-0 overflow-y-auto">
+    <div class="p-5">
+      <h2 class="text-lg font-semibold mb-5 text-gray-800 px-3">Manu</h2>
+      <nav class="space-y-1">
+        <!-- アクティブ: 薄いグレー背景 + 濃い文字 + 左の細いアクセント線 -->
+        <a href="#" id="nav-main" class="block px-3 py-2.5 rounded-md bg-gray-100 text-gray-900 border-l-2 border-gray-400 transition-colors duration-150 nav-link active">
+          <span class="font-medium text-sm">メイン</span>
+        </a>
+        <!-- 非アクティブ: 透明背景、ホバーで薄いグレー面がふわっと -->
+        <a href="#" id="nav-comments" class="block px-3 py-2.5 rounded-md text-gray-600 hover:bg-gray-100/80 transition-colors duration-150 nav-link">
+          <span class="font-medium text-sm">コメント一覧</span>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- メインコンテンツエリア -->
+  <main class="flex-1 overflow-y-auto bg-gray-50">
+    <div class="max-w-6xl mx-auto py-8 px-4">
+      
+      <!-- メインページコンテンツ -->
+      <div id="main-page" class="page-content">
+        <!-- ヘッダーセクション -->
+  <header class="mb-10 text-center">
+    <h1 class="text-3xl font-bold mb-3 text-gray-900">
+      Main Page
+    </h1>
+    <p class="text-sm text-gray-500 mb-6">
+      インポートしたYouTubeコメントを3Dで可視化
+    </p>
+    
+    <!-- CSV/JSONインポート機能 -->
+    <div class="flex justify-center gap-4 mb-6">
+      <button id="toggleCsvForm" type="button" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium">
+        Import CSV
+      </button>
+      <button id="toggleJsonForm" type="button" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium">
+        Import JSON
+      </button>
+    </div>
+
+    <!-- CSV upload form -->
+    <form id="csvUploadForm" method="post" enctype="multipart/form-data" action="{% url 'import_csv' %}" style="display:none; max-width: 400px; margin: 0 auto 20px;">
+      {% csrf_token %}
+      <div class="flex flex-col gap-3">
+        <input type="file" name="csv_file" accept=".csv" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+        <button type="submit" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium">
+          Upload CSV
+        </button>
+      </div>
+    </form>
+
+    <!-- JSON upload form -->
+    <form id="jsonUploadForm" method="post" enctype="multipart/form-data" action="{% url 'import_json' %}" style="display:none; max-width: 400px; margin: 0 auto 20px;">
+      {% csrf_token %}
+      <div class="flex flex-col gap-3">
+        <input type="file" name="json_file" accept=".json" required class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium">
+          Upload JSON
+        </button>
+      </div>
+    </form>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const csvBtn = document.getElementById("toggleCsvForm");
+      const jsonBtn = document.getElementById("toggleJsonForm");
+      const csvForm = document.getElementById("csvUploadForm");
+      const jsonForm = document.getElementById("jsonUploadForm");
+
+      if (csvBtn && jsonBtn && csvForm && jsonForm) {
+        csvBtn.addEventListener("click", function() {
+          csvForm.style.display = csvForm.style.display === "none" ? "block" : "none";
+          jsonForm.style.display = "none";
+        });
+
+        jsonBtn.addEventListener("click", function() {
+          jsonForm.style.display = jsonForm.style.display === "none" ? "block" : "none";
+          csvForm.style.display = "none";
+        });
+      }
+    });
+    </script>
+  </header>
+
+  <!-- インタラクティブな3Dグラフ -->
+  {% if graph_data %}
+  <div class="mb-10">
+    <div id="3d-graph" class="bg-white rounded-xl border border-gray-200 shadow-lg p-4" style="height: 600px;"></div>
+  </div>
+
+  <!-- グラフの説明ウィンドウ -->
+  <div class="bg-gray-50 rounded-xl border border-gray-200 shadow-lg p-6 mb-10">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900">
+      3Dグラフの見方と分析のポイント
+    </h2>
+    
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- 左側：グラフの説明 -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <h3 class="font-semibold text-lg mb-2 text-gray-800">グラフの操作方法</h3>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 font-bold">•</span>
+              <span><strong>回転:</strong> マウスでドラッグしてグラフを回転させ、様々な角度から確認できます</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 font-bold">•</span>
+              <span><strong>ズーム:</strong> マウスホイールで拡大・縮小できます</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 font-bold">•</span>
+              <span><strong>パン:</strong> Shiftキーを押しながらドラッグで移動できます</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-600 font-bold">•</span>
+              <span><strong>詳細確認:</strong> 各点にマウスをホバーするとコメントの詳細が表示されます</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <h3 class="font-semibold text-lg mb-2 text-gray-800">3つの軸の意味</h3>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li class="flex items-start gap-2">
+              <span class="text-green-600 font-bold">X軸 (Likes):</span>
+              <span>コメントに付けられた「いいね」の数。右側に行くほど人気のコメントです</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-600 font-bold">Y軸 (Replies):</span>
+              <span>そのコメントへの返信数。上側に行くほど議論が活発なコメントです</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-orange-600 font-bold">Z軸 (時間):</span>
+              <span>コメントが投稿された時間。奥に行くほど新しいコメントです</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 右側：分析のポイント -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+          <h3 class="font-semibold text-lg mb-2 text-gray-800">分析のポイント</h3>
+          <ul class="space-y-2 text-sm text-gray-700">
+            <li class="flex items-start gap-2">
+              <span class="text-gray-400 font-bold">•</span>
+              <span><strong>右上の点:</strong> いいねも返信も多い、エンゲージメントが高いコメント</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-gray-400 font-bold">•</span>
+              <span><strong>色の変化:</strong> 色が濃い（紫）ほど新しいコメント、薄い（黄）ほど古いコメント</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-gray-400 font-bold">•</span>
+              <span><strong>密集エリア:</strong> 点が集まっている場所は、類似したエンゲージメントパターン</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-gray-400 font-bold">•</span>
+              <span><strong>孤立した点:</strong> 他のコメントと異なる特徴を持つ可能性があります</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 統計サマリー -->
+  {% if stats %}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-lg p-6 mb-10">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900">統計サマリー</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+        <div class="text-sm text-gray-600 mb-2">総コメント数</div>
+        <div class="text-2xl font-bold text-blue-600">{{ stats.total_comments }}</div>
+      </div>
+      <div class="bg-green-50 rounded-lg p-4 border border-green-100">
+        <div class="text-sm text-gray-600 mb-2">平均いいね数</div>
+        <div class="text-2xl font-bold text-green-600">{{ stats.avg_likes|floatformat:1 }}</div>
+      </div>
+      <div class="bg-purple-50 rounded-lg p-4 border border-purple-100">
+        <div class="text-sm text-gray-600 mb-2">平均返信数</div>
+        <div class="text-2xl font-bold text-purple-600">{{ stats.avg_replies|floatformat:1 }}</div>
+      </div>
+      <div class="bg-orange-50 rounded-lg p-4 border border-orange-100">
+        <div class="text-sm text-gray-600 mb-2">最大いいね数</div>
+        <div class="text-2xl font-bold text-orange-600">{{ stats.max_likes }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 分析結果と改善アドバイス -->
+  {% if analysis and advice %}
+  <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl border border-yellow-200 shadow-lg p-6 mb-10 relative">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900 relative z-20">
+      分析結果と改善アドバイス
+    </h2>
+    
+    <div class="grid md:grid-cols-2 gap-6 {% if not is_premium %}blur-md opacity-50{% endif %} relative z-0">
+      <!-- 左側：分析結果 -->
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-xl mb-4 text-gray-800">データ分析結果</h3>
+        <div class="space-y-4">
+          <div class="border-l-4 border-blue-500 pl-4">
+            <div class="text-sm text-gray-600 mb-1">高エンゲージメントコメント</div>
+            <div class="text-2xl font-bold text-blue-600">{{ analysis.high_engagement_count }}件</div>
+            <div class="text-xs text-gray-500 mt-1">全体の{{ analysis.engagement_ratio }}%</div>
+          </div>
+          
+          <div class="border-l-4 border-gray-400 pl-4">
+            <div class="text-sm text-gray-600 mb-1">低エンゲージメントコメント</div>
+            <div class="text-2xl font-bold text-gray-600">{{ analysis.low_engagement_count }}件</div>
+          </div>
+          
+          <div class="border-l-4 border-green-500 pl-4">
+            <div class="text-sm text-gray-600 mb-1">最高いいね数</div>
+            <div class="text-2xl font-bold text-green-600">{{ analysis.top_comment_likes }}</div>
+          </div>
+          
+          <div class="border-l-4 border-purple-500 pl-4">
+            <div class="text-sm text-gray-600 mb-1">最高返信数</div>
+            <div class="text-2xl font-bold text-purple-600">{{ analysis.top_comment_replies }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：改善アドバイス -->
+      <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="font-semibold text-xl mb-4 text-gray-800">エンゲージメント向上のためのアドバイス</h3>
+        <div class="space-y-3">
+          {% for item in advice %}
+          <div class="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <div class="flex-shrink-0 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white font-bold text-sm mt-0.5">
+              {{ forloop.counter }}
+            </div>
+            <p class="text-sm text-gray-700 leading-relaxed">{{ item }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    {% if not is_premium %}
+    <!-- 無料プランの場合：モザイクオーバーレイ（タイトルの下から） -->
+    <div class="absolute left-0 right-0 bottom-0 bg-gray-900 bg-opacity-60 rounded-b-xl z-10 flex items-center justify-center" style="top: 80px; backdrop-filter: blur(8px);">
+      <div class="text-center p-8 bg-white bg-opacity-10 rounded-xl backdrop-blur-md border border-white border-opacity-20">
+        <div class="mb-6 text-white text-xl font-bold">この機能は有料プランでご覧いただけます</div>
+        <a href="/pricing/" class="inline-block px-8 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-500 transition shadow-lg">
+          プランを変更する
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- 3Dクラスタリング可視化 -->
+  {% if cluster_data %}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-lg p-6 mb-10">
+    <h2 class="text-2xl font-bold mb-4 text-gray-900">
+      3Dクラスタリング分析
+    </h2>
+    <p class="text-sm text-gray-600 mb-4">
+      コメントをTF-IDFベクトル化し、PCAで3次元に削減してKMeansでクラスタリングした結果を可視化しています。類似した内容のコメントが同じ色で表示されます。
+    </p>
+    <div id="cluster-3d-graph" class="bg-white rounded-lg border border-gray-200 p-4 mb-6" style="height: 700px;"></div>
+    
+    <!-- クラスタ分析レポート -->
+    <div id="cluster-analysis-report" class="mt-6">
+      <h3 class="text-xl font-bold mb-4 text-gray-900">クラスタ分析レポート</h3>
+      <div id="cluster-report-content" class="grid md:grid-cols-2 gap-4">
+        <!-- JavaScriptで動的に生成 -->
+      </div>
+    </div>
+  </div>
+  {% endif %}
+      </div>
+      
+      <!-- コメントページコンテンツ -->
+      <div id="comments-page" class="page-content" style="display: none;">
+        <header class="mb-10 text-center">
+          <h1 class="text-3xl font-bold mb-3 text-gray-900">
+            コメント一覧
+          </h1>
+          <p class="text-sm text-gray-500 mb-6">
+            すべてのコメントを一覧で確認できます。
+          </p>
+        </header>
+
+        <section class="bg-white shadow rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold">Comment Data</h2>
+            <div class="flex items-center gap-2">
+              <label for="limit-selector-comments" class="text-sm text-gray-600">表示件数:</label>
+              <select id="limit-selector-comments" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                {% for option in limit_options %}
+                  <option value="{{ option }}" {% if option == current_limit %}selected{% endif %}>{{ option }}件</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Author</th>
+          <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Comment</th>
+          <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Likes</th>
+          <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Replies</th>
+          <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for c in comments %}
+        <tr class="hover:bg-gray-50 transition">
+          <td class="px-4 py-2 text-sm font-medium text-gray-800">{{ c.author }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ c.comment_text|truncatechars:80 }}</td>
+          <td class="px-4 py-2 text-sm text-right text-gray-700">{{ c.like_count }}</td>
+          <td class="px-4 py-2 text-sm text-right text-gray-700">{{ c.reply_count }}</td>
+          <td class="px-4 py-2 text-sm text-right text-gray-500">{{ c.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    
+    <!-- ページネーション -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="mt-6 flex items-center justify-between">
+      <div class="text-sm text-gray-600">
+        <span>全 {{ page_obj.paginator.count }} 件中 {{ page_obj.start_index }} - {{ page_obj.end_index }} 件を表示</span>
+        <span class="ml-2">（{{ page_obj.number }} / {{ page_obj.paginator.num_pages }} ページ）</span>
+      </div>
+      
+      <nav class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+          <a href="?page=1&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">最初</a>
+          <a href="?page={{ page_obj.previous_page_number }}&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">前へ</a>
+        {% else %}
+          <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">最初</span>
+          <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">前へ</span>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <span class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg font-semibold">{{ num }}</span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">{{ num }}</a>
+          {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a href="?page={{ num }}&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">{{ num }}</a>
+          {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+            <span class="px-3 py-1.5 text-sm text-gray-400">...</span>
+          {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">次へ</a>
+          <a href="?page={{ page_obj.paginator.num_pages }}&limit={{ current_limit }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition">最後</a>
+        {% else %}
+          <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">次へ</span>
+          <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">最後</span>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Plotly.js ライブラリ -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+{% if graph_data %}
+// 3Dグラフのデータを取得
+const graphData = {{ graph_data|safe }};
+
+// Plotly.jsで3Dグラフを描画
+const trace = {
+    x: graphData.x,
+    y: graphData.y,
+    z: graphData.z,
+    mode: 'markers',
+    marker: {
+        size: 5,
+        color: graphData.colors,
+        colorscale: 'Viridis',
+        showscale: true,
+        colorbar: {
+            title: '投稿時間',
+            titleside: 'right'
+        },
+        line: {
+            color: 'rgba(0,0,0,0.1)',
+            width: 0.5
+        }
+    },
+    text: graphData.text,
+    hovertemplate: '<b>%{text}</b><br>' +
+                   'Likes: %{x}<br>' +
+                   'Replies: %{y}<br>' +
+                   '<extra></extra>',
+    type: 'scatter3d'
+};
+
+const layout = {
+    title: {
+        text: '3D YouTube Comment Engagement Analysis',
+        font: { size: 20 }
+    },
+    scene: {
+        xaxis: { 
+            title: 'Likes（いいね数）',
+            titlefont: { size: 14 },
+            backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+            gridcolor: 'white',
+            showbackground: true
+        },
+        yaxis: { 
+            title: 'Replies（返信数）',
+            titlefont: { size: 14 },
+            backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+            gridcolor: 'white',
+            showbackground: true
+        },
+        zaxis: { 
+            title: '投稿時間（タイムスタンプ）',
+            titlefont: { size: 14 },
+            backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+            gridcolor: 'white',
+            showbackground: true
+        },
+        camera: {
+            eye: { x: 1.5, y: 1.5, z: 1.5 }
+        },
+        aspectmode: 'cube'
+    },
+    margin: { l: 0, r: 0, b: 0, t: 50 },
+    paper_bgcolor: 'white',
+    plot_bgcolor: 'white'
+};
+
+const config = {
+    responsive: true,
+    displayModeBar: true,
+    modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+    displaylogo: false
+};
+
+Plotly.newPlot('3d-graph', [trace], layout, config);
+{% endif %}
+
+// 表示件数セレクタの変更処理（コメントページ用）
+const limitSelectorComments = document.getElementById('limit-selector-comments');
+if (limitSelectorComments) {
+    limitSelectorComments.addEventListener('change', function() {
+        const limit = this.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('limit', limit);
+        url.searchParams.set('page', '1'); // 表示件数変更時は1ページ目に戻る
+        url.searchParams.set('tab', 'comments'); // コメントページを維持
+        window.location.href = url.toString();
+    });
+}
+
+// 3Dクラスタリング可視化
+{% if cluster_data %}
+try {
+    const clusterData = {{ cluster_data|safe }};
+    
+    if (clusterData && clusterData.n_clusters && clusterData.x && clusterData.y && clusterData.z) {
+        const nClusters = clusterData.n_clusters;
+
+        // クラスターごとに色を割り当て
+        const colors = [
+            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'
+        ];
+
+        // 球体のメッシュを生成する関数
+        function createSphereMesh(center, radius, color, opacity, segments = 15) {
+            const x = center[0];
+            const y = center[1];
+            const z = center[2];
+            
+            const verticesX = [];
+            const verticesY = [];
+            const verticesZ = [];
+            const indicesI = [];
+            const indicesJ = [];
+            const indicesK = [];
+            
+            // 球体の頂点を生成
+            for (let i = 0; i <= segments; i++) {
+                const theta = (i * Math.PI) / segments;
+                const sinTheta = Math.sin(theta);
+                const cosTheta = Math.cos(theta);
+                
+                for (let j = 0; j <= segments; j++) {
+                    const phi = (j * 2 * Math.PI) / segments;
+                    const sinPhi = Math.sin(phi);
+                    const cosPhi = Math.cos(phi);
+                    
+                    verticesX.push(x + radius * sinTheta * cosPhi);
+                    verticesY.push(y + radius * sinTheta * sinPhi);
+                    verticesZ.push(z + radius * cosTheta);
+                }
+            }
+            
+            // 三角形のインデックスを生成
+            const numPoints = segments + 1;
+            for (let i = 0; i < segments; i++) {
+                for (let j = 0; j < segments; j++) {
+                    const first = i * numPoints + j;
+                    const second = first + numPoints;
+                    
+                    // 最初の三角形
+                    indicesI.push(first);
+                    indicesJ.push(second);
+                    indicesK.push(first + 1);
+                    
+                    // 2番目の三角形
+                    indicesI.push(second);
+                    indicesJ.push(second + 1);
+                    indicesK.push(first + 1);
+                }
+            }
+            
+            return {
+                type: 'mesh3d',
+                x: verticesX,
+                y: verticesY,
+                z: verticesZ,
+                i: indicesI,
+                j: indicesJ,
+                k: indicesK,
+                opacity: opacity,
+                color: color,
+                showscale: false,
+                hoverinfo: 'skip',
+                lighting: {
+                    ambient: 0.7,
+                    diffuse: 0.5
+                }
+            };
+        }
+
+        const traces = [];
+        
+        // まずクラスタの球体を描画（背景に）
+        if (clusterData.cluster_centers && clusterData.cluster_radii) {
+            for (let i = 0; i < nClusters; i++) {
+                const center = clusterData.cluster_centers[i];
+                const radius = clusterData.cluster_radii[i] * 1.2; // 少し大きくして見やすく
+                const color = colors[i % colors.length];
+                
+                if (center && radius > 0) {
+                    const sphereMesh = createSphereMesh(center, radius, color, 0.15, 15);
+                    sphereMesh.name = 'Cluster ' + i + ' (sphere)';
+                    sphereMesh.legendgroup = 'cluster' + i;
+                    sphereMesh.showlegend = false;
+                    traces.push(sphereMesh);
+                }
+            }
+        }
+        
+        // 次に各コメントを小さな点で描画
+        for (let i = 0; i < nClusters; i++) {
+            const mask = clusterData.cluster_labels.map((label, idx) => label === i);
+            const x = clusterData.x.filter((_, idx) => mask[idx]);
+            const y = clusterData.y.filter((_, idx) => mask[idx]);
+            const z = clusterData.z.filter((_, idx) => mask[idx]);
+            const comments = clusterData.comments.filter((_, idx) => mask[idx]);
+            
+            if (x.length > 0) {
+                // 重なっている点を少しずらすために、各点に小さなランダムオフセットを追加
+                const jitteredX = x.map(val => {
+                    const range = Math.max(...x) - Math.min(...x);
+                    const jitter = (Math.random() - 0.5) * range * 0.03; // 3%の範囲でjitter
+                    return val + jitter;
+                });
+                const jitteredY = y.map((val, idx) => {
+                    const range = Math.max(...y) - Math.min(...y);
+                    const jitter = (Math.random() - 0.5) * range * 0.03;
+                    return val + jitter;
+                });
+                const jitteredZ = z.map((val, idx) => {
+                    const range = Math.max(...z) - Math.min(...z);
+                    const jitter = (Math.random() - 0.5) * range * 0.03;
+                    return val + jitter;
+                });
+                
+                traces.push({
+                    x: jitteredX,
+                    y: jitteredY,
+                    z: jitteredZ,
+                    mode: 'markers',
+                    type: 'scatter3d',
+                    name: 'Cluster ' + i,
+                    marker: {
+                        size: 3,
+                        color: colors[i % colors.length],
+                        opacity: 0.85,
+                        line: {
+                            color: 'rgba(0,0,0,0.2)',
+                            width: 0.3
+                        }
+                    },
+                    text: comments,
+                    hovertemplate: '<b>Cluster ' + i + '</b><br>' +
+                                  'PC1: %{x:.2f}<br>' +
+                                  'PC2: %{y:.2f}<br>' +
+                                  'PC3: %{z:.2f}<br>' +
+                                  '<extra>%{text}</extra>',
+                    legendgroup: 'cluster' + i
+                });
+            }
+        }
+
+        if (traces.length > 0) {
+            const clusterLayout = {
+                title: {
+                    text: '3D Comment Clustering Visualization',
+                    font: { size: 20 }
+                },
+                scene: {
+                    xaxis: { 
+                        title: 'PC1',
+                        titlefont: { size: 14 },
+                        backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+                        gridcolor: 'white',
+                        showbackground: true
+                    },
+                    yaxis: { 
+                        title: 'PC2',
+                        titlefont: { size: 14 },
+                        backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+                        gridcolor: 'white',
+                        showbackground: true
+                    },
+                    zaxis: { 
+                        title: 'PC3',
+                        titlefont: { size: 14 },
+                        backgroundcolor: 'rgba(230, 230, 230, 0.5)',
+                        gridcolor: 'white',
+                        showbackground: true
+                    },
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1.5 }
+                    },
+                    aspectmode: 'cube'
+                },
+                margin: { l: 0, r: 0, b: 0, t: 50 },
+                paper_bgcolor: 'white',
+                plot_bgcolor: 'white',
+                width: 1200,
+                height: 700
+            };
+
+            const clusterConfig = {
+                responsive: true,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+                displaylogo: false
+            };
+
+            Plotly.newPlot('cluster-3d-graph', traces, clusterLayout, clusterConfig);
+            
+            // クラスタ分析レポートを生成
+            if (clusterData.cluster_analyses && clusterData.cluster_analyses.length > 0) {
+                const reportContent = document.getElementById('cluster-report-content');
+                if (reportContent) {
+                    reportContent.innerHTML = '';
+                    
+                    clusterData.cluster_analyses.forEach(analysis => {
+                        const clusterId = analysis.cluster_id;
+                        const color = colors[clusterId % colors.length];
+                        
+                        const card = document.createElement('div');
+                        card.className = 'bg-gray-50 rounded-lg border border-gray-200 p-4';
+                        card.style.borderLeft = `4px solid ${color}`;
+                        
+                        card.innerHTML = `
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-lg font-bold" style="color: ${color};">Cluster ${clusterId}</h4>
+                                <span class="text-sm text-gray-600">${analysis.comment_count}件</span>
+                            </div>
+                            
+                            ${analysis.top_keywords && analysis.top_keywords.length > 0 ? `
+                            <div class="mb-3">
+                                <div class="text-sm font-semibold text-gray-700 mb-1">主要キーワード:</div>
+                                <div class="flex flex-wrap gap-1">
+                                    ${analysis.top_keywords.map(keyword => 
+                                        `<span class="px-2 py-1 bg-blue-50 rounded text-xs text-blue-700 border border-blue-200">${keyword}</span>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                            <div class="mb-3 text-sm text-gray-600">
+                                平均文字数: ${analysis.avg_comment_length}文字
+                            </div>
+                            
+                            ${analysis.sample_comments && analysis.sample_comments.length > 0 ? `
+                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                <div class="text-sm font-semibold text-gray-700 mb-2">サンプルコメント:</div>
+                                <div class="space-y-2">
+                                    ${analysis.sample_comments.map(comment => 
+                                        `<div class="text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                            ${comment.length > 100 ? comment.substring(0, 100) + '...' : comment}
+                                        </div>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        `;
+                        
+                        reportContent.appendChild(card);
+                    });
+                }
+            }
+        }
+    }
+} catch (error) {
+    console.error('Error rendering cluster visualization:', error);
+    const errorDiv = document.getElementById('cluster-3d-graph');
+    if (errorDiv) {
+        errorDiv.innerHTML = '<p class="text-red-500 p-4">クラスタリング可視化の表示中にエラーが発生しました。</p>';
+    }
+}
+{% endif %}
+</script>
+
+<script>
+// ページ切り替え機能
+document.addEventListener('DOMContentLoaded', function() {
+    const navMain = document.getElementById('nav-main');
+    const navComments = document.getElementById('nav-comments');
+    const mainPage = document.getElementById('main-page');
+    const commentsPage = document.getElementById('comments-page');
+    
+    // 要素が存在するか確認
+    if (!mainPage || !commentsPage || !navMain || !navComments) {
+        console.error('必要な要素が見つかりません:', {
+            mainPage: !!mainPage,
+            commentsPage: !!commentsPage,
+            navMain: !!navMain,
+            navComments: !!navComments
+        });
+        return;
+    }
+    
+    function showPage(page) {
+        // すべてのページを非表示
+        if (mainPage) mainPage.style.display = 'none';
+        if (commentsPage) commentsPage.style.display = 'none';
+        
+        // Notion風スタイル: アクティブ = 薄いグレー背景 + 濃い文字 + 左アクセント / 非アクティブ = 透明 + 薄いグレーテキスト
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('bg-gray-100', 'text-gray-900', 'border-l-2', 'border-gray-400', 'active');
+            link.classList.add('text-gray-600');
+        });
+        
+        // 選択されたページを表示
+        if (page === 'main' && mainPage && navMain) {
+            mainPage.style.display = 'block';
+            navMain.classList.remove('text-gray-600');
+            navMain.classList.add('bg-gray-100', 'text-gray-900', 'border-l-2', 'border-gray-400', 'active');
+        } else if (page === 'comments' && commentsPage && navComments) {
+            commentsPage.style.display = 'block';
+            navComments.classList.remove('text-gray-600');
+            navComments.classList.add('bg-gray-100', 'text-gray-900', 'border-l-2', 'border-gray-400', 'active');
+        }
+    }
+    
+    // ナビゲーションリンクのクリックイベント
+    navMain.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('メインページをクリック');
+        showPage('main');
+    });
+    
+    navComments.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('コメントページをクリック');
+        showPage('comments');
+    });
+    
+    // URLパラメータでページを指定できるように
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('tab');
+    if (pageParam === 'comments') {
+        showPage('comments');
+    } else {
+        showPage('main');
+    }
+});
+</script>
+
+{% endblock %}

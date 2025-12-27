@@ -1,0 +1,85 @@
+{% extends "portal/base.html" %}
+
+{% block title %}コメント一覧{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>コメント一覧</h1>
+        <a href="{% url 'portal:comment_create' %}" class="btn btn-primary">新規作成</a>
+    </div>
+    
+    <form method="get" class="search-form">
+        <input type="text" name="search" value="{{ search_query }}" placeholder="コメント内容、投稿者、動画IDで検索..." class="form-control">
+        <button type="submit" class="btn btn-primary">検索</button>
+        {% if search_query %}
+            <a href="{% url 'portal:comment_list' %}" class="btn btn-secondary">クリア</a>
+        {% endif %}
+    </form>
+    
+    {% if comments %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>投稿者</th>
+                    <th>コメント内容</th>
+                    <th>動画ID</th>
+                    <th>いいね数</th>
+                    <th>返信数</th>
+                    <th>作成日時</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comment in comments %}
+                    <tr>
+                        <td>{{ comment.id }}</td>
+                        <td>{{ comment.author }}</td>
+                        <td>{{ comment.comment_text|truncatewords:15 }}</td>
+                        <td>{{ comment.video_id }}</td>
+                        <td>{{ comment.like_count }}</td>
+                        <td>{{ comment.reply_count }}</td>
+                        <td>{{ comment.created_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'portal:comment_detail' comment.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-right: 0.25rem;">詳細</a>
+                            <a href="{% url 'portal:comment_update' comment.pk %}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-right: 0.25rem;">編集</a>
+                            <a href="{% url 'portal:comment_delete' comment.pk %}" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">削除</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if is_paginated %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">前へ</a>
+                {% endif %}
+                
+                <span class="current">
+                    ページ {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">次へ</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
+            {% if search_query %}
+                検索結果が見つかりませんでした。
+            {% else %}
+                コメントがありません。
+            {% endif %}
+        </p>
+        {% if not search_query %}
+            <div style="text-align: center;">
+                <a href="{% url 'portal:comment_create' %}" class="btn btn-primary">最初のコメントを作成</a>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+

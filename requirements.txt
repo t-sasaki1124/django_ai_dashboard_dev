@@ -1,0 +1,7 @@
+Django>=4.2.0
+python-dotenv>=1.0.0
+# psycopg2-binary>=2.9.0  # PostgreSQLを使用する場合のみ必要（WindowsではVisual C++ Build Toolsが必要）
+pandas>=2.0.0
+matplotlib>=3.7.0
+stripe>=6.0.0
+

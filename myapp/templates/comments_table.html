@@ -1,0 +1,74 @@
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl font-semibold">Comment Data</h2>
+  <div class="flex items-center gap-2">
+    <label for="limit-selector" class="text-sm text-gray-600">表示件数:</label>
+    <select id="limit-selector" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      {% for option in limit_options %}
+        <option value="{{ option }}" {% if option == current_limit %}selected{% endif %}>{{ option }}件</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+<table class="min-w-full divide-y divide-gray-200">
+  <thead class="bg-gray-100">
+    <tr>
+      <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Author</th>
+      <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Comment</th>
+      <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Likes</th>
+      <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Replies</th>
+      <th class="px-4 py-2 text-right text-sm font-semibold text-gray-700">Created</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-gray-100">
+    {% for c in comments %}
+    <tr class="hover:bg-gray-50 transition">
+      <td class="px-4 py-2 text-sm font-medium text-gray-800">{{ c.author }}</td>
+      <td class="px-4 py-2 text-sm text-gray-700">{{ c.comment_text|truncatechars:80 }}</td>
+      <td class="px-4 py-2 text-sm text-right text-gray-700">{{ c.like_count }}</td>
+      <td class="px-4 py-2 text-sm text-right text-gray-700">{{ c.reply_count }}</td>
+      <td class="px-4 py-2 text-sm text-right text-gray-500">{{ c.created_at|date:"Y-m-d H:i" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- ページネーション -->
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="mt-6 flex items-center justify-between">
+  <div class="text-sm text-gray-600">
+    <span>全 {{ page_obj.paginator.count }} 件中 {{ page_obj.start_index }} - {{ page_obj.end_index }} 件を表示</span>
+    <span class="ml-2">（{{ page_obj.number }} / {{ page_obj.paginator.num_pages }} ページ）</span>
+  </div>
+  
+  <nav class="flex items-center gap-1">
+    {% if page_obj.has_previous %}
+      <a href="?page=1&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="1">最初</a>
+      <a href="?page={{ page_obj.previous_page_number }}&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="{{ page_obj.previous_page_number }}">前へ</a>
+    {% else %}
+      <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">最初</span>
+      <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">前へ</span>
+    {% endif %}
+    
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <span class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg font-semibold">{{ num }}</span>
+      {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="{{ num }}">{{ num }}</a>
+      {% elif num == 1 or num == page_obj.paginator.num_pages %}
+        <a href="?page={{ num }}&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="{{ num }}">{{ num }}</a>
+      {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+        <span class="px-3 py-1.5 text-sm text-gray-400">...</span>
+      {% endif %}
+    {% endfor %}
+    
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="{{ page_obj.next_page_number }}">次へ</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}&limit={{ current_limit }}" class="pagination-link px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition" data-page="{{ page_obj.paginator.num_pages }}">最後</a>
+    {% else %}
+      <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">次へ</span>
+      <span class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-400 cursor-not-allowed">最後</span>
+    {% endif %}
+  </nav>
+</div>
+{% endif %}
+

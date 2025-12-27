@@ -1,0 +1,129 @@
+{% extends "portal/base.html" %}
+
+{% block title %}{% if object %}コメント編集{% else %}コメント作成{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="margin-bottom: 2rem;">{% if object %}コメント編集{% else %}コメント作成{% endif %}</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="message error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="{{ form.video_id.id_for_label }}">{{ form.video_id.label }}</label>
+            {{ form.video_id }}
+            {% if form.video_id.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.video_id.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.comment_id.id_for_label }}">{{ form.comment_id.label }}</label>
+            {{ form.comment_id }}
+            {% if form.comment_id.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.comment_id.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.comment_text.id_for_label }}">{{ form.comment_text.label }}</label>
+            {{ form.comment_text }}
+            {% if form.comment_text.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.comment_text.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.author.id_for_label }}">{{ form.author.label }}</label>
+            {{ form.author }}
+            {% if form.author.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.author.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="{{ form.like_count.id_for_label }}">{{ form.like_count.label }}</label>
+                {{ form.like_count }}
+                {% if form.like_count.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">
+                        {{ form.like_count.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.reply_count.id_for_label }}">{{ form.reply_count.label }}</label>
+                {{ form.reply_count }}
+                {% if form.reply_count.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">
+                        {{ form.reply_count.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="{{ form.reply_depth_potential.id_for_label }}">{{ form.reply_depth_potential.label }}</label>
+                {{ form.reply_depth_potential }}
+                {% if form.reply_depth_potential.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">
+                        {{ form.reply_depth_potential.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.engagement_score.id_for_label }}">{{ form.engagement_score.label }}</label>
+                {{ form.engagement_score }}
+                {% if form.engagement_score.errors %}
+                    <div style="color: #e74c3c; margin-top: 0.5rem;">
+                        {{ form.engagement_score.errors }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.created_at.id_for_label }}">{{ form.created_at.label }}</label>
+            {{ form.created_at }}
+            {% if form.created_at.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.created_at.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.ai_reply.id_for_label }}">{{ form.ai_reply.label }}</label>
+            {{ form.ai_reply }}
+            {% if form.ai_reply.errors %}
+                <div style="color: #e74c3c; margin-top: 0.5rem;">
+                    {{ form.ai_reply.errors }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">{% if object %}更新{% else %}作成{% endif %}</button>
+            <a href="{% url 'portal:comment_list' %}" class="btn btn-secondary">キャンセル</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

@@ -1,0 +1,202 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Management Console{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="icon" href="{% static 'favicon_admin.ico' %}">
+<style>
+    /* カラーパレット */
+    :root {
+        --main-navy: #121634;
+        --bg-gray: #A6A6A6;
+        --accent-yellow: #FFD447;
+    }
+    
+    /* ヘッダー */
+    #header {
+        background-color: var(--main-navy) !important;
+        color: #fff !important;
+    }
+    
+    #header a:link, #header a:visited {
+        color: #fff !important;
+    }
+    
+    /* ブランディング */
+    #site-name a {
+        color: #fff !important;
+    }
+    
+    /* メインコンテンツエリア */
+    #content {
+        background-color: #fff !important;
+    }
+    
+    /* モジュール（カード） */
+    .module, .module table {
+        background-color: #fff !important;
+    }
+    
+    /* リンク */
+    a:link, a:visited {
+        color: var(--main-navy) !important;
+    }
+    
+    a:hover {
+        color: var(--accent-yellow) !important;
+    }
+    
+    /* ボタン（インラインスタイルがない場合のみ適用） */
+    .button:not([style*="background-color"]), 
+    input[type=submit]:not([style*="background-color"]), 
+    input[type=button]:not([style*="background-color"]), 
+    .submit-row input:not([style*="background-color"]) {
+        background-color: var(--main-navy) !important;
+        color: #fff !important;
+        border-color: var(--main-navy) !important;
+    }
+    
+    .button:not([style*="background-color"]):hover, 
+    input[type=submit]:not([style*="background-color"]):hover, 
+    input[type=button]:not([style*="background-color"]):hover {
+        background-color: var(--accent-yellow) !important;
+        color: var(--main-navy) !important;
+        border-color: var(--accent-yellow) !important;
+    }
+    
+    /* レポート出力ボタンはホバー時も色を維持 */
+    .button.report-export-btn:hover {
+        background-color: #FFD447 !important;
+        color: #121634 !important;
+        border-color: #FFD447 !important;
+    }
+    
+    /* アクセントボタン */
+    .button.default, input[type=submit].default, .submit-row input.default {
+        background-color: var(--accent-yellow) !important;
+        color: var(--main-navy) !important;
+        border-color: var(--accent-yellow) !important;
+    }
+    
+    .button.default:hover, input[type=submit].default:hover {
+        background-color: var(--main-navy) !important;
+        color: #fff !important;
+        border-color: var(--main-navy) !important;
+    }
+    
+    /* テーブルヘッダー */
+    thead th {
+        background-color: #f5f5f5 !important;
+        color: var(--main-navy) !important;
+        border-bottom: 2px solid var(--main-navy) !important;
+    }
+    
+    /* 選択された行 */
+    .selected {
+        background-color: var(--accent-yellow) !important;
+    }
+    
+    /* アクティブなタブ */
+    .selected a {
+        color: var(--main-navy) !important;
+    }
+    
+    /* サイドバー */
+    #user-tools {
+        color: #fff !important;
+    }
+    
+    #user-tools a {
+        color: #fff !important;
+    }
+    
+    #user-tools a:hover {
+        color: var(--accent-yellow) !important;
+    }
+    
+    /* メッセージ */
+    .messagelist li.success {
+        background-color: var(--accent-yellow) !important;
+        color: var(--main-navy) !important;
+    }
+    
+    /* フォーム要素のフォーカス */
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--accent-yellow) !important;
+        box-shadow: 0 0 0 2px rgba(255, 212, 71, 0.2) !important;
+    }
+    
+    /* 78AFC8（水色）を灰色に変更 */
+    *[style*="78AFC8"],
+    *[style*="78afc8"],
+    *[style*="#78AFC8"],
+    *[style*="#78afc8"] {
+        background-color: #A6A6A6 !important;
+        border-color: #A6A6A6 !important;
+        color: #A6A6A6 !important;
+    }
+    
+    /* Django管理画面のデフォルトの水色（78AFC8相当）を灰色に */
+    .addlink,
+    .changelink,
+    .deletelink,
+    .object-tools a,
+    .module h2 a,
+    .module caption a {
+        color: var(--main-navy) !important;
+    }
+    
+    .addlink:hover,
+    .changelink:hover,
+    .deletelink:hover,
+    .object-tools a:hover,
+    .module h2 a:hover,
+    .module caption a:hover {
+        color: var(--accent-yellow) !important;
+    }
+    
+    /* アクティブなタブや選択された要素の水色を灰色に */
+    .selected,
+    .active,
+    [style*="78AFC8"],
+    [style*="78afc8"] {
+        background-color: #A6A6A6 !important;
+    }
+    
+    /* Recent actionsセクションを非表示 */
+    .module#recent-actions-module,
+    .module h2:contains("Recent actions"),
+    .module h2:contains("最近のアクション") {
+        display: none !important;
+    }
+    
+    /* Recent actionsモジュール全体を非表示 */
+    .module:has(h2:contains("Recent actions")),
+    .module:has(h2:contains("最近のアクション")) {
+        display: none !important;
+    }
+</style>
+<script>
+    // Recent actionsセクションを削除
+    document.addEventListener('DOMContentLoaded', function() {
+        const modules = document.querySelectorAll('.module');
+        modules.forEach(function(module) {
+            const heading = module.querySelector('h2');
+            if (heading && (heading.textContent.includes('Recent actions') || heading.textContent.includes('最近のアクション'))) {
+                module.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">Management Console</a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+

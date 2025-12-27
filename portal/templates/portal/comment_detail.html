@@ -1,0 +1,72 @@
+{% extends "portal/base.html" %}
+
+{% block title %}コメント詳細{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>コメント詳細</h1>
+        <div>
+            <a href="{% url 'portal:comment_update' comment.pk %}" class="btn btn-primary" style="margin-right: 0.5rem;">編集</a>
+            <a href="{% url 'portal:comment_delete' comment.pk %}" class="btn btn-danger" style="margin-right: 0.5rem;">削除</a>
+            <a href="{% url 'portal:comment_list' %}" class="btn btn-secondary">一覧に戻る</a>
+        </div>
+    </div>
+    
+    <table class="table">
+        <tbody>
+            <tr>
+                <th style="width: 200px;">ID</th>
+                <td>{{ comment.id }}</td>
+            </tr>
+            <tr>
+                <th>動画ID</th>
+                <td>{{ comment.video_id }}</td>
+            </tr>
+            <tr>
+                <th>コメントID</th>
+                <td>{{ comment.comment_id }}</td>
+            </tr>
+            <tr>
+                <th>投稿者</th>
+                <td>{{ comment.author }}</td>
+            </tr>
+            <tr>
+                <th>コメント内容</th>
+                <td>{{ comment.comment_text|linebreaks }}</td>
+            </tr>
+            <tr>
+                <th>いいね数</th>
+                <td>{{ comment.like_count }}</td>
+            </tr>
+            <tr>
+                <th>返信数</th>
+                <td>{{ comment.reply_count }}</td>
+            </tr>
+            <tr>
+                <th>返信深度</th>
+                <td>{{ comment.reply_depth_potential }}</td>
+            </tr>
+            <tr>
+                <th>エンゲージメントスコア</th>
+                <td>{{ comment.engagement_score }}</td>
+            </tr>
+            <tr>
+                <th>作成日時</th>
+                <td>{{ comment.created_at|date:"Y-m-d H:i:s"|default:"-" }}</td>
+            </tr>
+            {% if comment.ai_reply %}
+                <tr>
+                    <th>AI返信</th>
+                    <td>{{ comment.ai_reply|linebreaks }}</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>所有者</th>
+                <td>{{ comment.owner.username|default:"未設定" }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+

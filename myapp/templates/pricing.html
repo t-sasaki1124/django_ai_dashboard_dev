@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing Plans{% endblock %}
+
+{% block content %}
+
+<div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+<style>
+/* --- 全体レイアウト --- */
+.pricing-container {
+    max-width: 1000px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    padding-top: 20px !important;
+}
+
+/* --- 見出し --- */
+.pricing-title {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.pricing-subtitle {
+    font-size: 18px;
+    color: #555;
+}
+
+/* --- カード配置 --- */
+.pricing-cards {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    margin-top: 40px !important;
+    flex-wrap: wrap !important; /* レスポンシブ対応 */
+    overflow-x: auto;  /* 画面が狭い場合は横スクロール */
+}
+
+@media (min-width: 1024px) {
+    .pricing-cards {
+        flex-wrap: nowrap !important; /* 大画面では横並び固定 */
+    }
+}
+
+/* --- 各プランカード --- */
+.pricing-card {
+    width: 280px;
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transition: 0.3s ease;
+    position: relative;
+    display: flex;              /* 中身を縦方向に並べる */
+    flex-direction: column;
+    flex-shrink: 0;             /* カードが縮小しないように */
+}
+
+.pricing-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 35px rgba(0,0,0,0.16);
+}
+
+/* ベストセラータグ */
+.card-badge {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: #2d8cff;
+    color: white;
+    padding: 7px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 10;
+}
+
+/* --- プラン名 --- */
+.plan-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* --- 料金表示 --- */
+.plan-price {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.plan-price span {
+    font-size: 16px;
+    color: #777;
+}
+
+/* --- 特典リスト --- */
+.plan-features {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    margin: 20px 0;
+}
+
+.plan-features li {
+    margin-bottom: 10px;
+    padding-left: 20px;
+    position: relative;
+    font-size: 14px;
+}
+
+.plan-features li:before {
+    content: "✔";
+    color: #2ecc71;
+    position: absolute;
+    left: 0;
+}
+
+/* --- ボタン --- */
+.plan-button {
+    display: block;
+    padding: 12px 0;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 10px;
+    transition: 0.2s ease;
+    text-align: center;
+    margin-top: auto;  /* ボタンをカード下部に寄せて高さを揃える */
+}
+
+.plan-button:hover {
+    background: #2675b9;
+}
+
+/* 現在のプランボタン用の色 */
+.plan-button-current {
+    background: #10b981;        /* グリーン系 */
+}
+
+.plan-button-current:hover {
+    background: #059669;
+}
+
+/* 現在のプランカードをグレーアウト */
+.pricing-card.current-plan {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.pricing-card.current-plan .plan-button-current {
+    pointer-events: auto;
+    cursor: default;
+}
+</style>
+
+<div class="pricing-container">
+
+    <h1 class="pricing-title">Pricing Plans</h1>
+    <p class="pricing-subtitle">用途に合わせて最適なプランをお選びいただけます。</p>
+
+    <div class="pricing-cards">
+        {% if plans %}
+        {% for plan in plans %}
+        <div class="pricing-card {% if current_plan and current_plan.id == plan.id %}current-plan{% elif not current_plan and plan.name == 'free' %}current-plan{% endif %}">
+            <div class="plan-name">{{ plan.display_name }}</div>
+            <div class="plan-price">
+                {% if plan.price == 0 %}
+                    ¥0
+                {% else %}
+                    ¥{{ plan.price|floatformat:0 }}
+                {% endif %}
+                <span>/ month</span>
+            </div>
+            {% if plan.description %}
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">{{ plan.description }}</p>
+            {% endif %}
+            <ul class="plan-features">
+                {% if plan.name == 'free' %}
+                    <li>YouTubeコメント CSV アップロード</li>
+                    <li>データの手動分析</li>
+                    <li>Django管理画面フルアクセス</li>
+                {% elif plan.name == 'pro' %}
+                    <li>レポート出力機能</li>
+                    <li>コメントの自動収集（API）</li>
+                    <li>AI返信テンプレート生成</li>
+                    <li>週次分析レポート自動生成</li>
+                    <li>クラスタリング・可視化</li>
+                {% elif plan.name == 'enterprise' %}
+                    <li>高度なAI分析（Embedding, pgvector）</li>
+                    <li>オリジナルAIモデル学習</li>
+                    <li>データベース自動バックアップ</li>
+                    <li>専用サポート（Slack）</li>
+                    <li>すべてのPro機能</li>
+                {% endif %}
+            </ul>
+            {% if current_plan and current_plan.id == plan.id %}
+                {# 現在選択中のプラン（有料プラン） #}
+                <a class="plan-button plan-button-current" href="#">現在選択中のプラン</a>
+            {% elif not current_plan and plan.name == 'free' %}
+                {# 無料プランが選択済みの場合（current_planがNone = 無料プラン） #}
+                <a class="plan-button plan-button-current" href="#">現在選択中のプラン</a>
+            {% else %}
+                {% if plan.is_premium %}
+                    {# 有料プラン（Pro、Enterprise）の場合、Stripe決済にリンク #}
+                    {% if plan.stripe_price_id or plan.name == 'pro' %}
+                        <a class="plan-button" href="{% url 'create_checkout_session' plan.id %}">このプランに変更</a>
+                    {% else %}
+                        <a class="plan-button" href="/admin/myapp/userplan/{% if current_user_plan %}{{ current_user_plan.id }}/change/?plan_id={{ plan.id }}{% else %}add/?user_id={{ user.id }}&plan_id={{ plan.id }}{% endif %}">このプランに変更</a>
+                    {% endif %}
+                {% else %}
+                    {# 無料プランの場合 #}
+                    {% if current_user_plan and current_plan and current_plan.is_premium %}
+                        {# 有料プランから無料プランへ変更する場合、確認ダイアログを表示 #}
+                        <button type="button" class="plan-button" onclick="showDowngradeConfirm()">このプランに変更</button>
+                    {% elif current_user_plan %}
+                        <a class="plan-button" href="/admin/myapp/userplan/{{ current_user_plan.id }}/change/?plan_id={{ plan.id }}">このプランに変更</a>
+                    {% else %}
+                        <a class="plan-button" href="/admin/myapp/userplan/add/?user_id={{ user.id }}&plan_id={{ plan.id }}">このプランを選択</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="text-align: center; color: #666; padding: 40px;">プランが設定されていません。管理画面でプランを作成してください。</p>
+        {% endif %}
+    </div>
+
+</div>
+</div>
+
+<!-- 無料プランへの変更確認ダイアログ -->
+<div id="downgradeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #333;">Proプランから無料プランへ変更しようとしています。</h2>
+        <p style="color: #666; margin-bottom: 20px;">無料プランに変更すると、以下の機能がご利用いただけなくなります。</p>
+        <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+            <li style="padding: 8px 0; color: #333; border-bottom: 1px solid #eee;">・レポート出力機能</li>
+            <li style="padding: 8px 0; color: #333; border-bottom: 1px solid #eee;">・コメントの自動収集（API）</li>
+            <li style="padding: 8px 0; color: #333; border-bottom: 1px solid #eee;">・AI返信テンプレート生成</li>
+            <li style="padding: 8px 0; color: #333; border-bottom: 1px solid #eee;">・週次分析レポート自動生成</li>
+            <li style="padding: 8px 0; color: #333; border-bottom: 1px solid #eee;">・クラスタリング・可視化</li>
+            <li style="padding: 8px 0; color: #333;">・分析結果と改善アドバイス</li>
+        </ul>
+        <p style="color: #666; margin-bottom: 30px; font-weight: 600;">本当に無料プランに変更してよろしいですか？</p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button type="button" onclick="closeDowngradeConfirm()" style="padding: 10px 24px; background: #e0e0e0; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">キャンセル</button>
+            <form method="post" action="{% url 'downgrade_to_free' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" style="padding: 10px 24px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;">無料プランに変更する</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDowngradeConfirm() {
+    document.getElementById('downgradeModal').style.display = 'flex';
+}
+
+function closeDowngradeConfirm() {
+    document.getElementById('downgradeModal').style.display = 'none';
+}
+
+// モーダル外をクリックしたら閉じる
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('downgradeModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeDowngradeConfirm();
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

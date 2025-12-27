@@ -1,0 +1,56 @@
+{% extends "portal/base.html" %}
+
+{% block title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 style="margin-bottom: 1rem;">ダッシュボード</h1>
+    <p style="color: #7f8c8d; margin-bottom: 2rem;">ようこそ、{{ user.username }}さん</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background-color: #3498db; color: white; padding: 1.5rem; border-radius: 8px;">
+            <h3 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ total_count }}</h3>
+            <p>総コメント数</p>
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h2 style="margin-bottom: 1rem;">最近のコメント</h2>
+        {% if comments %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>投稿者</th>
+                        <th>コメント内容</th>
+                        <th>いいね数</th>
+                        <th>作成日時</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in comments|slice:":10" %}
+                        <tr>
+                            <td>{{ comment.author }}</td>
+                            <td>{{ comment.comment_text|truncatewords:20 }}</td>
+                            <td>{{ comment.like_count }}</td>
+                            <td>{{ comment.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'portal:comment_detail' comment.pk %}" class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">詳細</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="color: #7f8c8d;">コメントがありません。</p>
+            <a href="{% url 'portal:comment_create' %}" class="btn btn-primary" style="margin-top: 1rem;">最初のコメントを作成</a>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'portal:comment_list' %}" class="btn btn-primary">すべてのコメントを見る</a>
+        <a href="{% url 'portal:comment_create' %}" class="btn btn-primary">新規コメントを作成</a>
+    </div>
+</div>
+{% endblock %}
+
